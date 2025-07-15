@@ -1,3 +1,915 @@
-האתר ירד זמנית,בשל תקלה שאפיק מצא
-<br>
-תודה לאפיק ולגד
+<html>
+  <head>
+    <base href="https://group-expense-calculator.app/" />
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>מחשבון תשלומים קבוצתי</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-i18n@9"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap");
+      body {
+        font-family: "Rubik", sans-serif;
+        background-color: #f0f4f8;
+        color: #2d3748;
+      }
+      .rtl {
+        direction: rtl;
+      }
+      .ltr {
+        direction: ltr;
+      }
+      .custom-number-input::-webkit-inner-spin-button,
+      .custom-number-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .custom-number-input {
+        -moz-appearance: textfield;
+      }
+      .btn {
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11),
+          0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+      .input-group {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        width: 100%;
+      }
+      .input-group .form-control {
+        position: relative;
+        flex: 1 1 auto;
+        width: 1%;
+        min-width: 0;
+      }
+      .input-group-append {
+        margin-left: -1px;
+      }
+      .currency-symbol {
+        display: flex;
+        align-items: center;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        text-align: center;
+        white-space: nowrap;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+      }
+      .card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      }
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 0.5s;
+      }
+      .fade-enter,
+      .fade-leave-to {
+        opacity: 0;
+      }
+      .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.075);
+      }
+      @media (max-width: 768px) {
+        body {
+          font-size: 14px;
+        }
+        .container {
+          padding: 1rem;
+        }
+        h1 {
+          font-size: 1.5rem;
+        }
+        h2 {
+          font-size: 1.2rem;
+        }
+        .card {
+          padding: 1rem;
+        }
+        .input-group {
+          flex-direction: column;
+        }
+        .input-group .form-control {
+          width: 100%;
+        }
+        .input-group-append {
+          margin-left: 0;
+          margin-top: 0.5rem;
+        }
+        .currency-selector {
+          margin-bottom: 1rem;
+        }
+        .btn {
+          padding: 0.5rem;
+          font-size: 0.9rem;
+        }
+        table {
+          font-size: 0.8rem;
+        }
+        th,
+        td {
+          padding: 0.5rem;
+        }
+      }
+      .mobile-layout .card {
+        margin-bottom: 1rem;
+      }
+      .mobile-layout .input-group {
+        margin-bottom: 0.5rem;
+      }
+      .mobile-layout .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      .mobile-layout table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .mobile-layout .currency-selector,
+      .mobile-layout .language-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .mobile-layout .language-buttons button {
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body
+    :class="$i18n.locale === 'he' ? 'rtl' : 'ltr'"
+    class="bg-gradient-to-br from-indigo-100 via-blue-50 to-white min-h-screen"
+  >
+    <div
+      id="app"
+      :class="['max-w-lg mx-auto p-2 sm:p-4', { 'mobile-layout': isMobileDevice }]"
+    >
+      <header
+        class="relative z-20 bg-white/80 backdrop-blur shadow-md py-2 px-4 flex items-center justify-end mb-2 rounded-b-2xl"
+      >
+        <div class="flex items-center gap-2 w-full justify-end">
+          <select
+            id="currency-select"
+            v-model="selectedCurrency"
+            class="border border-indigo-200 rounded-lg p-2 text-indigo-700 font-bold bg-indigo-50 focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="ILS">₪ (ILS)</option>
+            <option value="USD">$ (USD)</option>
+            <option value="EUR">€ (EUR)</option>
+          </select>
+          <button
+            @click="toggleLanguage"
+            class="btn bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full p-2 flex items-center justify-center text-xl"
+            :title="$i18n.locale === 'he' ? 'Switch to English' : 'החלף לעברית'"
+          >
+            <i class="fas fa-globe"></i>
+          </button>
+        </div>
+      </header>
+      <h1
+        class="text-3xl sm:text-4xl font-extrabold text-indigo-700 tracking-tight text-center mb-6 mt-2"
+      >
+        {{ $t('title') }}
+      </h1>
+      <!-- כרטיס משתתפים -->
+      <div
+        class="card mb-6 p-4 sm:p-6 rounded-2xl shadow-lg border border-indigo-100 bg-white/90"
+      >
+        <h2
+          class="text-xl sm:text-2xl font-semibold mb-4 text-indigo-600 flex items-center gap-2"
+        >
+          <i class="fas fa-users text-indigo-400"></i> {{ $t('participants') }}
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="(participant, index) in participants"
+            :key="index"
+            class="flex items-center mb-2 w-full"
+          >
+            <div class="input-group w-full">
+              <input
+                v-model="participants[index]"
+                class="form-control border border-indigo-200 rounded-l-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-indigo-50 text-indigo-800 placeholder-indigo-300"
+                :placeholder="$t('participantPlaceholder', { number: index + 1 })"
+              />
+              <div class="input-group-append">
+                <button
+                  @click="removeParticipant(index)"
+                  class="btn bg-red-400 hover:bg-red-600 text-white rounded-r-lg p-2 transition-all duration-200"
+                >
+                  <i class="fas fa-user-minus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            @click="addParticipant"
+            class="btn bg-green-500 hover:bg-green-600 text-white rounded-lg p-2 w-full mt-2 font-bold flex items-center justify-center gap-2 shadow-sm"
+          >
+            <i class="fas fa-user-plus"></i> {{ $t('addParticipant') }}
+          </button>
+        </div>
+      </div>
+      <!-- כרטיס פריטים -->
+      <div
+        class="card mb-6 p-4 sm:p-6 rounded-2xl shadow-lg border border-indigo-100 bg-white/90"
+      >
+        <h2
+          class="text-xl sm:text-2xl font-semibold mb-4 text-indigo-600 flex items-center gap-2"
+        >
+          <i class="fas fa-shopping-cart text-indigo-400"></i> {{ $t('items') }}
+        </h2>
+        <div class="flex flex-col gap-4">
+          <div
+            v-for="(item, index) in items"
+            :key="index"
+            class="border border-indigo-100 rounded-xl p-4 bg-indigo-50 flex flex-col gap-3 shadow-sm relative"
+          >
+            <button
+              @click="removeItem(index)"
+              class="absolute top-1 left-1 btn bg-red-400 hover:bg-red-600 text-white rounded-full p-2 w-9 h-9 flex items-center justify-center z-10 shadow"
+              title="{{ $t('remove') }}"
+              style="transform: translate(-50%, -50%)"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+            <div class="flex flex-col gap-2">
+              <label class="font-semibold text-indigo-700 mt-6"
+                >{{ $t('itemName') }}
+                <input
+                  v-model="item.name"
+                  class="w-full mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-indigo-800 placeholder-indigo-300"
+                  :placeholder="$t('itemPlaceholder', { number: index + 1 })"
+                />
+              </label>
+              <label class="font-semibold text-indigo-700"
+                >{{ $t('price') }}
+                <div class="flex items-center gap-2 mt-1">
+                  <span
+                    class="currency-symbol bg-indigo-100 border-indigo-200 text-indigo-700"
+                    >{{ currencySymbol }}</span
+                  >
+                  <input
+                    v-model.number="item.price"
+                    type="number"
+                    class="form-control custom-number-input focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-indigo-800 placeholder-indigo-300 w-full"
+                    :placeholder="$t('price')"
+                  />
+                </div>
+              </label>
+              <label class="font-semibold text-indigo-700"
+                >{{ $t('participants') }}
+                <div class="flex flex-wrap gap-2 mt-1">
+                  <label
+                    v-for="participant in participants"
+                    :key="participant"
+                    class="inline-flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-100"
+                  >
+                    <input
+                      type="checkbox"
+                      v-model="item.participants"
+                      :value="participant"
+                      class="form-checkbox text-indigo-600 focus:ring-indigo-400"
+                    />
+                    <span class="mr-1 text-indigo-700">{{ participant }}</span>
+                  </label>
+                </div>
+              </label>
+              <label class="font-semibold text-indigo-700"
+                >{{ $t('selectPayer') }}
+                <select
+                  v-model="item.paidBy"
+                  class="w-full mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-indigo-800"
+                >
+                  <option value="">{{ $t('selectPayer') }}</option>
+                  <option
+                    v-for="participant in participants"
+                    :key="participant"
+                    :value="participant"
+                  >
+                    {{ participant }}
+                  </option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+        <button
+          @click="addItem"
+          class="btn bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2 mt-4 w-full font-bold flex items-center justify-center gap-2 shadow-sm"
+        >
+          <i class="fas fa-plus"></i> {{ $t('addItem') }}
+        </button>
+      </div>
+      <!-- כרטיס סיכום -->
+      <div
+        class="card mb-6 p-4 sm:p-6 rounded-2xl shadow-lg border border-indigo-100 bg-white/90"
+      >
+        <h2
+          class="text-xl sm:text-2xl font-semibold mb-4 text-indigo-600 flex items-center gap-2"
+        >
+          <i class="fas fa-coins text-indigo-400"></i> {{ $t('summary') }}
+        </h2>
+        <!-- במובייל: כרטיסים במקום טבלה -->
+        <div v-if="isMobileDevice" class="flex flex-col gap-3">
+          <div
+            v-for="(amounts, participant) in summary.summary"
+            :key="participant"
+            class="border border-indigo-100 rounded-xl p-3 bg-indigo-50 flex flex-col gap-1 shadow-sm"
+          >
+            <div class="font-bold text-indigo-700">{{ participant }}</div>
+            <div class="text-sm">
+              <span v-if="participant === summary.highestPayer.name">
+                {{ $t('highestPayer') }}
+              </span>
+              <span v-else-if="amounts.toTransfer">
+                {{ $t('owes') }} {{ currencySymbol }}{{
+                amounts.toTransfer.toFixed(2) }}
+              </span>
+              <span v-else-if="amounts.balance > 0">
+                {{ $t('receives') }} {{ currencySymbol }}{{
+                amounts.balance.toFixed(2) }}
+              </span>
+              <span v-else> {{ $t('settled') }} </span>
+            </div>
+            <div class="mt-2">
+              <button
+                v-if="amounts.toTransfer"
+                @click="shareWhatsApp(participant, amounts.toTransfer)"
+                class="btn bg-green-500 hover:bg-green-600 text-white rounded-lg p-2 w-full flex items-center justify-center gap-2"
+              >
+                <i class="fab fa-whatsapp"></i> {{ $t('shareWhatsApp') }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- בדסקטופ: טבלה -->
+        <div v-else class="overflow-x-auto">
+          <table
+            class="w-full border-collapse table-hover text-sm sm:text-base"
+          >
+            <thead>
+              <tr class="bg-indigo-50">
+                <th class="border p-2">{{ $t('participant') }}</th>
+                <th class="border p-2">{{ $t('amountToTransfer') }}</th>
+                <th class="border p-2">{{ $t('actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(amounts, participant) in summary.summary"
+                :key="participant"
+                class="border hover:bg-indigo-50 transition-colors"
+              >
+                <td class="border p-2 font-bold text-indigo-700">
+                  {{ participant }}
+                </td>
+                <td class="border p-2">
+                  <span v-if="participant === summary.highestPayer.name">
+                    {{ $t('highestPayer') }}
+                  </span>
+                  <span v-else-if="amounts.toTransfer">
+                    {{ $t('owes') }} {{ currencySymbol }}{{
+                    amounts.toTransfer.toFixed(2) }}
+                  </span>
+                  <span v-else-if="amounts.balance > 0">
+                    {{ $t('receives') }} {{ currencySymbol }}{{
+                    amounts.balance.toFixed(2) }}
+                  </span>
+                  <span v-else> {{ $t('settled') }} </span>
+                </td>
+                <td class="border p-2">
+                  <button
+                    v-if="amounts.toTransfer"
+                    @click="shareWhatsApp(participant, amounts.toTransfer)"
+                    class="btn bg-green-500 hover:bg-green-600 text-white rounded-lg p-2 flex items-center gap-2"
+                  >
+                    <i class="fab fa-whatsapp"></i> {{ $t('shareWhatsApp') }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button
+          @click="shareSummaryWhatsApp"
+          class="btn bg-green-600 hover:bg-green-700 text-white rounded-lg p-2 mt-4 w-full font-bold flex items-center justify-center gap-2 shadow-sm"
+        >
+          <i class="fab fa-whatsapp"></i> {{ $t('shareSummaryWhatsApp') }}
+        </button>
+      </div>
+    </div>
+    <!-- אנימציה קלה לכפתורים -->
+    <style>
+      .btn {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(80, 80, 160, 0.06);
+      }
+      .btn:active {
+        transform: scale(0.97);
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+      }
+      .card {
+        transition: box-shadow 0.2s;
+      }
+      .card:hover {
+        box-shadow: 0 8px 24px rgba(80, 80, 160, 0.1);
+      }
+      @media (max-width: 640px) {
+        html,
+        body {
+          font-size: 17px;
+        }
+        .card {
+          padding: 1rem !important;
+        }
+        .input-group {
+          flex-direction: column;
+        }
+        .input-group .form-control {
+          width: 100%;
+        }
+        .input-group-append {
+          margin-left: 0;
+          margin-top: 0.5rem;
+        }
+      }
+    </style>
+    <script>
+      const { createApp, ref, computed, watch, onMounted } = Vue;
+      const { createI18n } = VueI18n;
+
+      const i18n = createI18n({
+        locale: "he",
+        fallbackLocale: "en",
+        messages: {
+          he: {
+            title: "מחשבון תשלומים קבוצתי",
+            participants: "משתתפים",
+            participantPlaceholder: "משתתף {number}",
+            remove: "הסר",
+            addParticipant: "הוסף משתתף",
+            items: "פריטים",
+            itemName: "שם הפריט",
+            price: "מחיר",
+            selectPayer: "בחר מי שילם",
+            paid: "שילם",
+            owes: "חייב",
+            receives: "מגיע",
+            settled: "סולק",
+            balance: "יתרה",
+            actions: "פעולות",
+            itemPlaceholder: "פריט {number}",
+            addItem: "הוסף פריט",
+            summary: "סיכום",
+            participant: "משתף",
+            amountToPay: "סכום לתשלום",
+            amountToTransfer: "סכום להעברה",
+            currency: "₪",
+            highestPayer: "מקבל התשלומים",
+            highestPayerSummary:
+              'מקבל התשלומים: {name}\nשילם סה"כ: {currency}{amount}',
+            otherPayersSummary: "משתתפים אחרים ששילמו:",
+            payerDetails:
+              "{name}: שילם {currency}{paid}, צריך לקבל {currency}{toReceive} ממקבל התשלומים",
+            transferSummary: "העברות כספים:",
+            transferDetails:
+              "{name}: צריך להעביר {currency}{amount} ל-{recipient}",
+            itemizedSummary: "פירוט הקניות:",
+            itemDetails:
+              '{name}: {currency}{price} (שולם ע"י {paidBy}, עבור: {participants})',
+            selectCurrency: "בחר מטבע",
+            currencySymbols: {
+              ILS: "₪",
+              USD: "$",
+              EUR: "€",
+            },
+            shareWhatsApp: "שתף בוואטסאפ",
+            shareSummaryWhatsApp: "שלח סיכום לקבוצה בוואטסאפ",
+            summaryMessage: "סיכום תשלומים:",
+            participantSummary:
+              "{participant}: שילם {currency}{paid}, חייב {currency}{owes}, יתרה {currency}{balance}",
+            shareMessageOwes: "היי {participant}, אתה חייב {currency}{amount}.",
+            shareMessageReceives:
+              "היי {participant}, מגיע לך {currency}{amount}.",
+            shareMessageTransfer:
+              "היי {participant}, אתה צריך להעביר {currency}{amount} ל-{highestPayer}.",
+            participantSummaryTransfer:
+              "{participant}: צריך להעביר {currency}{amount} ל-{highestPayer}",
+            participantSettled:
+              "{participant}: מסודר (לא צריך להעביר או לקבל כסף)",
+          },
+          en: {
+            title: "Group Expense Calculator",
+            participants: "Participants",
+            participantPlaceholder: "Participant {number}",
+            remove: "Remove",
+            addParticipant: "Add Participant",
+            items: "Items",
+            itemName: "Item Name",
+            price: "Price",
+            selectPayer: "Select payer",
+            paid: "Paid",
+            owes: "Owes",
+            receives: "Receives",
+            settled: "Settled",
+            balance: "Balance",
+            actions: "Actions",
+            itemPlaceholder: "Item {number}",
+            addItem: "Add Item",
+            summary: "Summary",
+            participant: "Participant",
+            amountToPay: "Amount to Pay",
+            amountToTransfer: "Amount to Transfer",
+            currency: "$",
+            highestPayer: "Payment Receiver",
+            highestPayerSummary:
+              "Main payment receiver: {name}\nTotal paid: {currency}{amount}",
+            otherPayersSummary: "Other participants who paid:",
+            payerDetails:
+              "{name}: paid {currency}{paid}, should receive {currency}{toReceive}",
+            transferSummary: "Money transfers:",
+            transferDetails:
+              "{name}: needs to transfer {currency}{amount} to {recipient}",
+            itemizedSummary: "Itemized summary:",
+            itemDetails:
+              "{name}: {currency}{price} (paid by {paidBy}, for: {participants})",
+            selectCurrency: "Select Currency",
+            currencySymbols: {
+              ILS: "₪",
+              USD: "$",
+              EUR: "€",
+            },
+            shareWhatsApp: "Share on WhatsApp",
+            shareSummaryWhatsApp: "Send Summary to WhatsApp Group",
+            summaryMessage: "Payment Summary:",
+            participantSummary:
+              "{participant}: Paid {currency}{paid}, Owes {currency}{owes}, Balance {currency}{balance}",
+            shareMessageOwes: "Hi {participant}, you owe {currency}{amount}.",
+            shareMessageReceives:
+              "Hi {participant}, you should receive {currency}{amount}.",
+            shareMessageTransfer:
+              "Hi {participant}, you need to transfer {currency}{amount} to {highestPayer}.",
+            participantSummaryTransfer:
+              "{participant}: needs to transfer {currency}{amount} to {highestPayer}",
+            participantSettled: "{participant}: settled (no transfer needed)",
+          },
+        },
+      });
+
+      const app = createApp({
+        setup() {
+          try {
+            const participants = ref([]);
+            const items = ref([]);
+            const selectedCurrency = ref("ILS");
+
+            const currencySymbol = computed(() => {
+              switch (selectedCurrency.value) {
+                case "ILS":
+                  return "₪";
+                case "USD":
+                  return "$";
+                case "EUR":
+                  return "€";
+                default:
+                  return "₪";
+              }
+            });
+
+            const addParticipant = () => {
+              participants.value.push("");
+            };
+
+            const removeParticipant = (index) => {
+              const removedParticipant = participants.value[index];
+              participants.value.splice(index, 1);
+              items.value.forEach((item) => {
+                item.participants = item.participants.filter(
+                  (p) => p !== removedParticipant
+                );
+              });
+            };
+
+            const addItem = () => {
+              items.value.push({
+                name: "",
+                price: 0,
+                participants: [],
+                paidBy: "",
+              });
+            };
+
+            const removeItem = (index) => {
+              items.value.splice(index, 1);
+            };
+
+            const summary = computed(() => {
+              const result = {};
+              let highestPayer = { name: "", amount: 0 };
+              let totalExpense = 0;
+
+              participants.value.forEach((participant) => {
+                if (participant && participant.trim() !== "") {
+                  result[participant] = { paid: 0, owed: 0, balance: 0 };
+                }
+              });
+
+              items.value.forEach((item) => {
+                if (
+                  item &&
+                  item.paidBy &&
+                  item.price > 0 &&
+                  Array.isArray(item.participants)
+                ) {
+                  const participantCount = item.participants.length;
+                  if (participantCount > 0) {
+                    const pricePerPerson = item.price / participantCount;
+
+                    if (result[item.paidBy]) {
+                      result[item.paidBy].paid += item.price;
+                      totalExpense += item.price;
+                    }
+
+                    item.participants.forEach((participant) => {
+                      if (result[participant]) {
+                        result[participant].owed += pricePerPerson;
+                      }
+                    });
+
+                    if (
+                      result[item.paidBy] &&
+                      result[item.paidBy].paid > highestPayer.amount
+                    ) {
+                      highestPayer = {
+                        name: item.paidBy,
+                        amount: result[item.paidBy].paid,
+                      };
+                    }
+                  }
+                }
+              });
+
+              Object.keys(result).forEach((participant) => {
+                if (result[participant]) {
+                  result[participant].balance =
+                    result[participant].paid - result[participant].owed;
+                  if (participant !== highestPayer.name) {
+                    if (result[participant].balance < 0) {
+                      result[participant].toTransfer =
+                        -result[participant].balance;
+                    } else if (result[participant].balance > 0) {
+                      if (result[highestPayer.name]) {
+                        result[highestPayer.name].balance +=
+                          result[participant].balance;
+                      }
+                      result[participant].toTransfer = 0;
+                    }
+                  }
+                }
+              });
+
+              return { summary: result, highestPayer };
+            });
+
+            const getItemDetails = () => {
+              return items.value.map((item) => ({
+                name: item.name,
+                price: item.price,
+                paidBy: item.paidBy,
+                participants: item.participants,
+                pricePerPerson:
+                  item.participants.length > 0
+                    ? item.price / item.participants.length
+                    : 0,
+              }));
+            };
+
+            const getParticipantDetails = () => {
+              const details = {};
+              participants.value.forEach((participant) => {
+                details[participant] = { paid: 0, owed: 0, toTransfer: 0 };
+              });
+
+              items.value.forEach((item) => {
+                if (item.paidBy) {
+                  details[item.paidBy].paid += item.price;
+                  const pricePerPerson =
+                    item.participants.length > 0
+                      ? item.price / item.participants.length
+                      : 0;
+                  item.participants.forEach((participant) => {
+                    details[participant].owed += pricePerPerson;
+                  });
+                }
+              });
+
+              Object.entries(summary.value.summary).forEach(
+                ([participant, amounts]) => {
+                  details[participant].toTransfer = amounts.toTransfer || 0;
+                }
+              );
+
+              return details;
+            };
+
+            const shareSummaryWhatsApp = () => {
+              const highestPayer = summary.value.highestPayer;
+              const summaryData = summary.value.summary;
+              const itemDetails = getItemDetails();
+
+              let message = i18n.global.t("summaryMessage") + "\n\n";
+
+              message +=
+                i18n.global.t("highestPayerSummary", {
+                  name: highestPayer.name,
+                  amount: highestPayer.amount.toFixed(2),
+                  currency: currencySymbol.value,
+                }) + "\n\n";
+
+              const otherPayers = Object.entries(summaryData).filter(
+                ([name, details]) =>
+                  name !== highestPayer.name && details.paid > 0
+              );
+
+              if (otherPayers.length > 0) {
+                message += i18n.global.t("otherPayersSummary") + "\n";
+                otherPayers.forEach(([name, details]) => {
+                  message +=
+                    i18n.global.t("payerDetails", {
+                      name,
+                      paid: details.paid.toFixed(2),
+                      toReceive: Math.max(0, details.balance).toFixed(2),
+                      currency: currencySymbol.value,
+                    }) + "\n";
+                });
+                message += "\n";
+              }
+
+              message += i18n.global.t("transferSummary") + "\n";
+              Object.entries(summaryData)
+                .filter(([_, details]) => details.toTransfer > 0)
+                .forEach(([name, details]) => {
+                  message +=
+                    i18n.global.t("transferDetails", {
+                      name,
+                      amount: details.toTransfer.toFixed(2),
+                      currency: currencySymbol.value,
+                      recipient: highestPayer.name,
+                    }) + "\n";
+                });
+
+              Object.entries(summaryData)
+                .filter(
+                  ([name, details]) =>
+                    details.toTransfer === 0 && details.balance === 0
+                )
+                .forEach(([name]) => {
+                  message +=
+                    i18n.global.t("participantSettled", { participant: name }) +
+                    "\n";
+                });
+              message += "\n";
+
+              message += i18n.global.t("itemizedSummary") + "\n";
+              itemDetails.forEach((item) => {
+                message +=
+                  i18n.global.t("itemDetails", {
+                    name: item.name,
+                    price: item.price.toFixed(2),
+                    currency: currencySymbol.value,
+                    paidBy: item.paidBy,
+                    participants: item.participants.join(", "),
+                  }) + "\n";
+              });
+
+              const encodedMessage = encodeURIComponent(message);
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(
+                navigator.userAgent
+              );
+              const whatsappUrl = isMobile
+                ? "whatsapp://send"
+                : "https://web.whatsapp.com/send";
+              window.open(`${whatsappUrl}?text=${encodedMessage}`, "_blank");
+            };
+
+            const saveToLocalStorage = () => {
+              localStorage.setItem(
+                "groupExpenseCalculator",
+                JSON.stringify({
+                  participants: participants.value,
+                  items: items.value,
+                  language: i18n.global.locale,
+                  currency: selectedCurrency.value,
+                })
+              );
+            };
+
+            const loadFromLocalStorage = () => {
+              const savedData = localStorage.getItem("groupExpenseCalculator");
+              if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                participants.value = parsedData.participants;
+                items.value = parsedData.items;
+                if (parsedData.language) {
+                  i18n.global.locale = parsedData.language;
+                }
+                if (parsedData.currency) {
+                  selectedCurrency.value = parsedData.currency;
+                }
+              }
+            };
+
+            const shareWhatsApp = (participant, amount) => {
+              const message = i18n.global.t("shareMessageTransfer", {
+                participant,
+                amount: amount.toFixed(2),
+                currency: currencySymbol.value,
+                highestPayer: summary.value.highestPayer.name,
+              });
+              const encodedMessage = encodeURIComponent(message);
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(
+                navigator.userAgent
+              );
+              const whatsappUrl = isMobile
+                ? "whatsapp://send"
+                : "https://web.whatsapp.com/send";
+              window.open(`${whatsappUrl}?text=${encodedMessage}`, "_blank");
+            };
+
+            const changeLanguage = (lang) => {
+              i18n.global.locale = lang;
+            };
+
+            const toggleLanguage = () => {
+              i18n.global.locale = i18n.global.locale === "he" ? "en" : "he";
+            };
+
+            onMounted(() => {
+              // לא טוען נתונים מה-localStorage
+            });
+
+            // לא מבצע שמירה אוטומטית
+
+            return {
+              participants,
+              items,
+              summary,
+              selectedCurrency,
+              currencySymbol,
+              addParticipant,
+              removeParticipant,
+              addItem,
+              removeItem,
+              shareWhatsApp,
+              shareSummaryWhatsApp,
+              changeLanguage,
+              toggleLanguage,
+              isMobileDevice: computed(() => {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                  navigator.userAgent
+                );
+              }),
+            };
+          } catch (error) {
+            console.error("An error occurred in setup:", error);
+            return {
+              error:
+                "An unexpected error occurred. Please try refreshing the page.",
+            };
+          }
+        },
+      });
+
+      app.use(i18n);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
